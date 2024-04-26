@@ -271,7 +271,7 @@ public class GroupTreeView extends BorderPane {
         return disclosureNode;
     }
 
-    private StackPane createNumberCell2(GroupNodeViewModel group) {
+    private StackPane createNumberCell(GroupNodeViewModel group) {
         final StackPane node = new StackPane();
         node.getStyleClass().add("hits");
         if (!group.isRoot()) {
