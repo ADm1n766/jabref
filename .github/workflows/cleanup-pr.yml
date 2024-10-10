@@ -19,14 +19,16 @@ jobs:
         run: |
           if [ "$BUILDJABREFPRIVATEKEY" == "" ]; then
             echo "secretspresent=NO" >> $GITHUB_OUTPUT
+            echo "❌ Secret BUILDJABREFPRIVATEKEY not present"
           else
             echo "secretspresent=YES" >> $GITHUB_OUTPUT
+            echo "✔️ Secret BUILDJABREFPRIVATEKEY present"
           fi
         env:
           BUILDJABREFPRIVATEKEY: ${{ secrets.buildJabRefPrivateKey }}
       - name: Delete folder on builds.jabref.org
         if: steps.checksecrets.outputs.secretspresent == 'YES'
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v1.1.0
         with:
           script: rm -rf /var/www/builds.jabref.org/www/pull/${{ github.event.pull_request.number }} || true
           host: build-upload.jabref.org

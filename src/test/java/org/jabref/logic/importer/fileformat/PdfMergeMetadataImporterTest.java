@@ -7,7 +7,7 @@ import java.util.List;
 import javafx.collections.FXCollections;
 
 import org.jabref.logic.importer.ImportFormatPreferences;
-import org.jabref.logic.importer.fetcher.GrobidPreferences;
+import org.jabref.logic.importer.util.GrobidPreferences;
 import org.jabref.logic.util.StandardFileType;
 import org.jabref.model.entry.BibEntry;
 import org.jabref.model.entry.LinkedFile;
@@ -41,17 +41,6 @@ class PdfMergeMetadataImporterTest {
         when(importFormatPreferences.grobidPreferences()).thenReturn(grobidPreferences);
 
         importer = new PdfMergeMetadataImporter(importFormatPreferences);
-    }
-
-    @Test
-    void sGetExtensions() {
-        assertEquals(StandardFileType.PDF, importer.getFileType());
-    }
-
-    @Test
-    void getDescription() {
-        assertEquals("PdfMergeMetadataImporter imports metadata from a PDF using multiple strategies and merging the result.",
-                     importer.getDescription());
     }
 
     @Test

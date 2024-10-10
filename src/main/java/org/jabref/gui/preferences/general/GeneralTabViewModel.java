@@ -20,14 +20,18 @@ import javafx.collections.FXCollections;
 import javafx.scene.control.SpinnerValueFactory;
 
 import org.jabref.gui.DialogService;
-import org.jabref.gui.desktop.JabRefDesktop;
+import org.jabref.gui.WorkspacePreferences;
+import org.jabref.gui.desktop.os.NativeDesktop;
 import org.jabref.gui.frame.UiMessageHandler;
+import org.jabref.gui.preferences.GuiPreferences;
 import org.jabref.gui.preferences.PreferenceTabViewModel;
 import org.jabref.gui.remote.CLIMessageHandler;
 import org.jabref.gui.theme.Theme;
 import org.jabref.gui.theme.ThemeTypes;
 import org.jabref.gui.util.DirectoryDialogConfiguration;
 import org.jabref.gui.util.FileDialogConfiguration;
+import org.jabref.logic.FilePreferences;
+import org.jabref.logic.LibraryPreferences;
 import org.jabref.logic.l10n.Language;
 import org.jabref.logic.l10n.Localization;
 import org.jabref.logic.net.ssl.TrustStoreManager;
@@ -39,12 +43,6 @@ import org.jabref.model.database.BibDatabaseMode;
 import org.jabref.model.entry.BibEntryTypesManager;
 import org.jabref.model.strings.StringUtil;
 import org.jabref.model.util.FileUpdateMonitor;
-import org.jabref.preferences.FilePreferences;
-import org.jabref.preferences.InternalPreferences;
-import org.jabref.preferences.LibraryPreferences;
-import org.jabref.preferences.MergeDialogPreferences;
-import org.jabref.preferences.PreferencesService;
-import org.jabref.preferences.WorkspacePreferences;
 
 import com.airhacks.afterburner.injection.Injector;
 import de.saxsys.mvvmfx.utils.validation.CompositeValidator;
@@ -68,7 +66,8 @@ public class GeneralTabViewModel implements PreferenceTabViewModel {
 
     private final BooleanProperty themeSyncOsProperty = new SimpleBooleanProperty();
 
-    private final StringProperty customPathToThemeProperty = new SimpleStringProperty();
+    // init with empty string to avoid npe in accessing
+    private final StringProperty customPathToThemeProperty = new SimpleStringProperty("");
 
     private final BooleanProperty fontOverrideProperty = new SimpleBooleanProperty();
     private final StringProperty fontSizeProperty = new SimpleStringProperty();
@@ -88,12 +87,11 @@ public class GeneralTabViewModel implements PreferenceTabViewModel {
     private final StringProperty backupDirectoryProperty = new SimpleStringProperty("");
 
     private final DialogService dialogService;
-    private final PreferencesService preferences;
+    private final GuiPreferences preferences;
     private final WorkspacePreferences workspacePreferences;
     private final LibraryPreferences libraryPreferences;
     private final FilePreferences filePreferences;
     private final RemotePreferences remotePreferences;
-    private final MergeDialogPreferences mergeDialogPreferences;
 
     private final Validator fontSizeValidator;
     private final Validator customPathToThemeValidator;
@@ -102,21 +100,17 @@ public class GeneralTabViewModel implements PreferenceTabViewModel {
     private final BooleanProperty remoteServerProperty = new SimpleBooleanProperty();
     private final StringProperty remotePortProperty = new SimpleStringProperty("");
     private final Validator remotePortValidator;
-    private final InternalPreferences internalPreferences;
-    private final BooleanProperty versionCheckProperty = new SimpleBooleanProperty();
     private final FileUpdateMonitor fileUpdateMonitor;
     private final BibEntryTypesManager entryTypesManager;
     private final TrustStoreManager trustStoreManager;
 
-    public GeneralTabViewModel(DialogService dialogService, PreferencesService preferences, FileUpdateMonitor fileUpdateMonitor, BibEntryTypesManager entryTypesManager) {
+    public GeneralTabViewModel(DialogService dialogService, GuiPreferences preferences, FileUpdateMonitor fileUpdateMonitor, BibEntryTypesManager entryTypesManager) {
         this.dialogService = dialogService;
         this.preferences = preferences;
         this.workspacePreferences = preferences.getWorkspacePreferences();
         this.libraryPreferences = preferences.getLibraryPreferences();
         this.filePreferences = preferences.getFilePreferences();
         this.remotePreferences = preferences.getRemotePreferences();
-        this.internalPreferences = preferences.getInternalPreferences();
-        this.mergeDialogPreferences = preferences.getMergeDialogPreferences();
         this.fileUpdateMonitor = fileUpdateMonitor;
         this.entryTypesManager = entryTypesManager;
 
@@ -246,8 +240,6 @@ public class GeneralTabViewModel implements PreferenceTabViewModel {
             }
         });
 
-        internalPreferences.setVersionCheckEnabled(versionCheckProperty.getValue());
-
         getPortAsInt(remotePortProperty.getValue()).ifPresent(newPort -> {
             if (remotePreferences.isDifferentPort(newPort)) {
                 remotePreferences.setPort(newPort);
@@ -343,10 +335,13 @@ public class GeneralTabViewModel implements PreferenceTabViewModel {
     }
 
     public void importCSSFile() {
+        String fileDir = customPathToThemeProperty.getValue().isEmpty() ? preferences.getInternalPreferences().getLastPreferencesExportPath().toString()
+                : customPathToThemeProperty.getValue();
+
         FileDialogConfiguration fileDialogConfiguration = new FileDialogConfiguration.Builder()
                 .addExtensionFilter(StandardFileType.CSS)
                 .withDefaultExtension(StandardFileType.CSS)
-                .withInitialDirectory(preferences.getInternalPreferences().getLastPreferencesExportPath()).build();
+                .withInitialDirectory(fileDir).build();
 
         dialogService.showFileOpenDialog(fileDialogConfiguration).ifPresent(file ->
                 customPathToThemeProperty.setValue(file.toAbsolutePath().toString()));
@@ -418,7 +413,7 @@ public class GeneralTabViewModel implements PreferenceTabViewModel {
     public void openBrowser() {
         String url = "https://themes.jabref.org";
         try {
-            JabRefDesktop.openBrowser(url, preferences.getFilePreferences());
+            NativeDesktop.openBrowser(url, preferences.getExternalApplicationsPreferences());
         } catch (IOException e) {
             dialogService.showErrorDialogAndWait(Localization.lang("Could not open website."), e);
         }

@@ -3,6 +3,7 @@ package org.jabref.logic.importer.fetcher;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -11,13 +12,12 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.jabref.logic.help.HelpFile;
-import org.jabref.logic.importer.FetcherException;
 import org.jabref.logic.importer.ImporterPreferences;
 import org.jabref.logic.importer.PagedSearchBasedParserFetcher;
 import org.jabref.logic.importer.Parser;
 import org.jabref.logic.importer.fetcher.transformers.SpringerQueryTransformer;
+import org.jabref.logic.os.OS;
 import org.jabref.logic.util.BuildInfo;
-import org.jabref.logic.util.OS;
 import org.jabref.model.entry.BibEntry;
 import org.jabref.model.entry.LinkedFile;
 import org.jabref.model.entry.Month;
@@ -133,7 +133,7 @@ public class SpringerFetcher implements PagedSearchBasedParserFetcher, Customiza
                     JSONObject url = (JSONObject) data;
                     if ("pdf".equalsIgnoreCase(url.optString("format"))) {
                         try {
-                            entry.addFile(new LinkedFile(new URL(url.optString("value")), "PDF"));
+                            entry.addFile(new LinkedFile(URI.create(url.optString("value")).toURL(), "PDF"));
                         } catch (MalformedURLException e) {
                             LOGGER.info("Malformed URL: {}", url.optString("value"));
                         }
@@ -185,8 +185,7 @@ public class SpringerFetcher implements PagedSearchBasedParserFetcher, Customiza
      * @return URL
      */
     @Override
-    public URL getURLForQuery(QueryNode luceneQuery, int pageNumber) throws URISyntaxException, MalformedURLException, FetcherException {
-
+    public URL getURLForQuery(QueryNode luceneQuery, int pageNumber) throws URISyntaxException, MalformedURLException {
         URIBuilder uriBuilder = new URIBuilder(API_URL);
         uriBuilder.addParameter("q", new SpringerQueryTransformer().transformLuceneQuery(luceneQuery).orElse("")); // Search query
         uriBuilder.addParameter("api_key", importerPreferences.getApiKey(getName()).orElse(API_KEY)); // API key
